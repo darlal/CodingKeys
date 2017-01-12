@@ -189,7 +189,7 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
 
 - (BOOL)handleChordTrackingForHotKey:(HotKey *)hotKey {
     BOOL ret = YES;
-    NSLog(@"HotKey CAPTURED: %@", hotKey);
+
     if (self.isTrackingPrefix) {
         [self cancelTimer];
 
