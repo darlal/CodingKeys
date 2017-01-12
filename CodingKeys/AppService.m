@@ -1,18 +1,23 @@
 #import "AppService.h"
 #import "HotKey.h"
+#import "ChordKey.h"
 
 static NSString * const KeysFileName = @"keys";
 static NSString * const AboutURL = @"https://github.com/fe9lix/CodingKeys";
 
 NSString * const AppServiceDidChangeHotKeys = @"AppServiceDidChangeHotKeys";
 
+static NSInteger LastAppId = 1;
+
 @interface AppService () <NSFilePresenter>
 
-@property (nonatomic, strong) NSDictionary *hotKeysForAppName;
+@property (nonatomic, strong) NSDictionary *hotKeysForAppId;
 @property (nonatomic, strong) NSFileCoordinator *fileCoordinator;
 @property (strong) NSURL *presentedItemURL;
 @property (strong) NSOperationQueue *presentedItemOperationQueue;
 @property (nonatomic, strong) NSTimer *timer;
+
+@property (nonatomic, strong) NSDictionary *idForAppName;
 
 @end
 
@@ -42,31 +47,82 @@ NSString * const AppServiceDidChangeHotKeys = @"AppServiceDidChangeHotKeys";
 
 - (void)setupHotKeysForAppName {
     NSArray *keyMappings = [self loadKeyMappingsFile];
-    
-    NSMutableDictionary *hotKeysForAppName = [NSMutableDictionary dictionary];
-    
+
+    NSMutableDictionary *hotKeysForAppId = [NSMutableDictionary dictionary];
+    NSMutableDictionary *idForAppName = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *allHotKeys = [[NSMutableDictionary alloc] init];
+
     for (NSDictionary *keyMapping in keyMappings) {
-        NSString *key = [keyMapping[@"key"] stringByTrimmingCharactersInSet:
-                         [NSCharacterSet whitespaceCharacterSet]];
-        if (![key length]) { continue; }
+        NSString *chordString = [keyMapping[@"key"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (![chordString length]) { continue; }
 
         NSDictionary *mapping = keyMapping[@"mapping"];
-        
-        HotKey *hotKey = [[HotKey alloc] initWithKey:key
-                                             mapping:mapping];
-        
+        NSInteger validAppIds = 0;
+
         for (NSString *appName in mapping) {
-            if (!hotKeysForAppName[appName]) {
-                hotKeysForAppName[appName] = [NSMutableArray array];
+            NSNumber *appId = [idForAppName objectForKey:appName];
+            if (!appId) {
+                appId = @(LastAppId *= 2);
+                [idForAppName setObject:appId forKey:appName];
             }
+
+            validAppIds |= [appId integerValue];
+        }
+
+        NSArray *chordStringkeys = [chordString componentsSeparatedByString:@"|"];
+        if (![chordStringkeys count]) { continue; }
+
+        NSMutableOrderedSet *hotKeyList = [[NSMutableOrderedSet alloc] init];
+
+        ChordKey *nextChordKey = nil;
+        NSInteger chordStringKeysCount = [chordStringkeys count];
+        BOOL isStandalone = chordStringKeysCount == 1;
+        NSInteger numKeys = chordStringKeysCount - 1;
+
+        for (NSInteger i = numKeys; i >= 0; i--) {
+            NSString *stringKey = [chordStringkeys[i] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            if (![stringKey length]) {
+                [hotKeyList removeAllObjects];
+                break;
+            }
+
+            HotKey *temp = [[HotKey alloc] initWithKey:stringKey];
+            HotKey *hotKey = [allHotKeys objectForKey:@(temp.hash)];
+            if (!hotKey) {
+                hotKey = temp;
+                [allHotKeys setObject:hotKey forKey:@(hotKey.hash)];
+            }
+
+            ChordKey *chordKey = [[ChordKey alloc] initWithValidAppIds:validAppIds
+                                                                hotKey:hotKey
+                                                              isPrefix:(i == 0) && chordStringKeysCount > 1
+                                                          nextChordKey:nextChordKey
+                                                               mapping:i == numKeys ? mapping : nil
+                                                          isStandalone:isStandalone];
+
+            [hotKey.chordKeys addObject:chordKey];
+            [hotKeyList addObject:hotKey];
+            nextChordKey = chordKey;
+        }
+
+        if (![hotKeyList count]) { continue; }
+
+        for (NSString *appName in mapping) {
+            NSNumber *appId = [idForAppName objectForKey:appName];
+
+            if (![hotKeysForAppId objectForKey:appId]) {
+                [hotKeysForAppId setObject:[[NSMutableOrderedSet alloc] init] forKey:appId];
+            }
+
             NSString *mappedKey = mapping[appName];
-            if (![mappedKey isEqualToString:key]) {
-                [hotKeysForAppName[appName] addObject:hotKey];
+            if (![mappedKey isEqualToString:chordString]) {
+                [[hotKeysForAppId objectForKey:appId] unionOrderedSet:hotKeyList];
             }
         }
     }
-    
-    self.hotKeysForAppName = hotKeysForAppName;
+
+    self.hotKeysForAppId = hotKeysForAppId;
+    self.idForAppName = idForAppName;
 }
 
 - (NSArray *)loadKeyMappingsFile {
