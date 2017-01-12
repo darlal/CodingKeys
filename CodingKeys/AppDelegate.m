@@ -4,6 +4,7 @@
 #import "HotKey.h"
 #import "LaunchService.h"
 #import <Carbon/Carbon.h>
+#import "ChordKey.h"
 
 @interface AppDelegate ()
 
@@ -49,6 +50,11 @@
                                              selector:@selector(didTriggerHotKey:)
                                                  name:HotKeyHandlerDidTriggerHotKey
                                                object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(didTriggerChordKey:)
+                                                 name:HotKeyHandlerDidTriggerChordKey
+                                               object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(didChangeHotKeys:)
@@ -71,12 +77,12 @@
 }
 
 - (void)registerHotKeysForApp:(NSString *)app {
+    AppService *appService = [AppService sharedService];
     HotKeyService *hotKeyService = [HotKeyService sharedService];
-    
-    NSArray *hotKeys = [[AppService sharedService] hotKeysForAppWithName:app];
-    for (HotKey *hotKey in hotKeys) {
-        [hotKeyService registerHotKey:hotKey];
-    }
+
+    NSOrderedSet *hotKeys = [appService hotKeysForAppWithName:app];
+    [hotKeyService registerHotKeys:hotKeys
+                          forAppId:[[appService idForAppWithName:app] integerValue]];
 }
 
 - (void)unregisterHotKeys {
@@ -89,13 +95,19 @@
 }
 
 - (void)didTriggerHotKey:(NSNotification *)notification {
+    //pass hotkey through to app
     HotKey *hotKey = notification.userInfo[@"hotKey"];
-    
-    NSArray *mappedHotKeys = [hotKey mappedHotKeysForAppWithName:[self activeApplicationName]];
-    if ([mappedHotKeys count] == 0) {
-        return;
-    }
-    
+    [[HotKeyService sharedService] dispatchKeyEventsForHotKeys:@[hotKey]];
+}
+
+- (void)didTriggerChordKey:(NSNotification *)notification {
+    ChordKey *chordKey = notification.userInfo[@"chordKey"];
+
+    NSString *appName = [self activeApplicationName];
+    NSArray *mappedHotKeys = [HotKey mappedHotKeysForAppWithName:appName
+                                                         mapping:chordKey.mapping[appName]];
+    if ([mappedHotKeys count] == 0) { return; }
+
     [[HotKeyService sharedService] dispatchKeyEventsForHotKeys:mappedHotKeys];
 }
 
