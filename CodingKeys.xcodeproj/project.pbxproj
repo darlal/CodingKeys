@@ -25,6 +25,7 @@
 		DCC6EBA8182E955A00E2EAE6 /* keys.json in Resources */ = {isa = PBXBuildFile; fileRef = DCC6EBA7182E955A00E2EAE6 /* keys.json */; };
 		DCC6EBAB182E968800E2EAE6 /* AppService.m in Sources */ = {isa = PBXBuildFile; fileRef = DCC6EBAA182E968800E2EAE6 /* AppService.m */; };
 		DCC6EBAE182FEE5E00E2EAE6 /* HotKey.m in Sources */ = {isa = PBXBuildFile; fileRef = DCC6EBAD182FEE5E00E2EAE6 /* HotKey.m */; };
+		F4DBC0291E2726CE00625843 /* ChordKey.m in Sources */ = {isa = PBXBuildFile; fileRef = F4DBC0281E2726CE00625843 /* ChordKey.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,8 @@
 		DCC6EBAA182E968800E2EAE6 /* AppService.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppService.m; sourceTree = "<group>"; };
 		DCC6EBAC182FEE5E00E2EAE6 /* HotKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HotKey.h; sourceTree = "<group>"; };
 		DCC6EBAD182FEE5E00E2EAE6 /* HotKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HotKey.m; sourceTree = "<group>"; };
+		F4DBC0271E2726CE00625843 /* ChordKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChordKey.h; sourceTree = "<group>"; };
+		F4DBC0281E2726CE00625843 /* ChordKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ChordKey.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,6 +139,8 @@
 		DCC6EB6D182D9E3700E2EAE6 /* CodingKeys */ = {
 			isa = PBXGroup;
 			children = (
+				F4DBC0271E2726CE00625843 /* ChordKey.h */,
+				F4DBC0281E2726CE00625843 /* ChordKey.m */,
 				DCC6EB79182D9E3700E2EAE6 /* AppDelegate.h */,
 				DCC6EB7A182D9E3700E2EAE6 /* AppDelegate.m */,
 				DCC6EBA9182E968800E2EAE6 /* AppService.h */,
@@ -298,6 +303,7 @@
 				DCC6EB7B182D9E3700E2EAE6 /* AppDelegate.m in Sources */,
 				DCC6EB74182D9E3700E2EAE6 /* main.m in Sources */,
 				DC0C21CF183941DA0057B626 /* LaunchService.m in Sources */,
+				F4DBC0291E2726CE00625843 /* ChordKey.m in Sources */,
 				DC2DB8971831897800959260 /* KeyCodeConverter.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
