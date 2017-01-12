@@ -7,7 +7,8 @@ NSString * const AppServiceDidChangeHotKeys;
 + (instancetype)sharedService;
 
 - (BOOL)isAppRegistered:(NSString *)appName;
-- (NSArray *)hotKeysForAppWithName:(NSString *)appName;
+- (NSNumber *)idForAppWithName:(NSString *)appName;
+- (NSOrderedSet *)hotKeysForAppWithName:(NSString *)appName;
 - (void)openKeyMappings;
 - (void)openAboutURL;
 

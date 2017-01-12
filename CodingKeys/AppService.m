@@ -179,11 +179,15 @@ static NSInteger LastAppId = 1;
 }
 
 - (BOOL)isAppRegistered:(NSString *)appName {
-    return self.hotKeysForAppName[appName] != nil;
+    return [self idForAppWithName:appName] != nil;
 }
 
-- (NSArray *)hotKeysForAppWithName:(NSString *)appName {
-    return self.hotKeysForAppName[appName];
+- (NSOrderedSet *)hotKeysForAppWithName:(NSString *)appName {
+    return self.hotKeysForAppId[[self idForAppWithName:appName]];
+}
+
+- (NSNumber *)idForAppWithName:(NSString *)appName {
+    return [self.idForAppName objectForKey:appName];
 }
 
 - (void)openKeyMappings {
