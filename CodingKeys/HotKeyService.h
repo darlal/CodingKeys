@@ -8,6 +8,7 @@ extern NSString * const HotKeyHandlerDidTriggerHotKey;
 
 + (instancetype)sharedService;
 
+- (void)registerHotKeys:(NSOrderedSet *)hotKeys forAppId:(NSInteger)appId;
 - (HotKey *)registerHotKey:(HotKey *)hotKey;
 - (void)unregisterAllHotKeys;
 - (void)dispatchKeyEventsForHotKeys:(NSArray *)hotKeys;

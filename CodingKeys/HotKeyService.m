@@ -8,6 +8,11 @@ NSString * const HotKeyHandlerDidTriggerHotKey = @"HotKeyHandlerDidTriggerHotKey
 
 @property (nonatomic, strong) NSMutableDictionary *hotKeys;
 
+@property (nonatomic, strong) NSTimer *trackingTimer;
+@property (nonatomic, assign) BOOL isTrackingPrefix;
+@property (nonatomic, strong) NSMutableOrderedSet *nextChordKeys;
+@property (nonatomic, assign) NSInteger currentAppId;
+
 @end
 
 @implementation HotKeyService
@@ -35,6 +40,10 @@ static id this;
     this = self;
     
     self.hotKeys = [NSMutableDictionary dictionary];
+    self.nextChordKeys = [[NSMutableOrderedSet alloc] init];
+
+    // AppIDs start with 2, so we can be sure that no app will have an ID of 1
+    self.currentAppId = 1;
     
     [self installHotKeyHandler];
 }
@@ -49,6 +58,15 @@ static id this;
                                    &eventType,
                                    NULL,
                                    NULL);
+}
+
+
+- (void)registerHotKeys:(NSOrderedSet *)hotKeys forAppId:(NSInteger)appId {
+    self.currentAppId = appId;
+
+    for (HotKey *hotKey in hotKeys) {
+        [self registerHotKey:hotKey];
+    }
 }
 
 - (HotKey *)registerHotKey:(HotKey *)hotKey {
