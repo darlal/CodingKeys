@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 
 extern NSString * const HotKeyHandlerDidTriggerHotKey;
+extern NSString * const HotKeyHandlerDidTriggerChordKey;
 
 @class HotKey;
 

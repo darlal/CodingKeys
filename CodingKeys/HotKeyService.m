@@ -1,8 +1,10 @@
 #import "HotKeyService.h"
 #import <Carbon/Carbon.h>
 #import "HotKey.h"
+#import "ChordKey.h"
 
 NSString * const HotKeyHandlerDidTriggerHotKey = @"HotKeyHandlerDidTriggerHotKey";
+NSString * const HotKeyHandlerDidTriggerChordKey = @"HotKeyHandlerDidTriggerChordKey";
 
 @interface HotKeyService ()
 
@@ -116,20 +118,43 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     
     HotKey *hotKey = [this findHotKeyByID:keyID];
     
-    [this dispatchNotificationForHotKey:hotKey];
+    OSStatus ret = noErr;
+    BOOL handled = [this handleChordTrackingForHotKey:hotKey];
+    if (!handled) {
+        ret = CallNextEventHandler(nextHandler, theEvent);
+        if (ret == eventNotHandledErr) {
+            // Pass the hotkey through to the app
+            [this performSelector:@selector(dispatchNotificationForHotKey:) withObject:hotKey afterDelay:0.2];
+        }
+    }
     
-    return noErr;
+    return ret;
 }
 
 - (void)dispatchNotificationForHotKey:(HotKey *)hotKey {
-    NSNotification *notification = [NSNotification notificationWithName:HotKeyHandlerDidTriggerHotKey
+    [self dispatchNotificationWithName:HotKeyHandlerDidTriggerHotKey
+                              userInfo:@{@"hotKey" : hotKey}];
+}
+
+- (void)dispatchNotificationForChordKey:(ChordKey *)chordKey {
+    [self dispatchNotificationWithName:HotKeyHandlerDidTriggerChordKey
+                              userInfo:@{@"chordKey" : chordKey}];
+}
+
+- (void)dispatchNotificationWithName:(NSString *)noteName userInfo:(NSDictionary *)info {
+    NSNotification *notification = [NSNotification notificationWithName:noteName
                                                                  object:nil
-                                                               userInfo:@{@"hotKey":hotKey}];
+                                                               userInfo:info];
     
     [[NSNotificationCenter defaultCenter] postNotification:notification];
 }
 
 - (void)unregisterAllHotKeys {
+    // AppIDs start with 2, so we can be sure that no app will have an ID of 1q
+    self.currentAppId = 1;
+
+    [self cancelTracking];
+
     NSDictionary *hotKeys = [self.hotKeys copy];
     for (id keyID in hotKeys) {
         [self unregisterHotKey:hotKeys[keyID]];
@@ -161,5 +186,90 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     
     CFRelease(source);
 }
+
+- (BOOL)handleChordTrackingForHotKey:(HotKey *)hotKey {
+    BOOL ret = YES;
+    NSLog(@"HotKey CAPTURED: %@", hotKey);
+    if (self.isTrackingPrefix) {
+        [self cancelTimer];
+
+        NSMutableOrderedSet *nextChordKeys = [[NSMutableOrderedSet alloc] init];
+        ChordKey *trigger = nil;
+
+        for (ChordKey *chordKey in self.nextChordKeys) {
+            if ([chordKey.hotKey isEqual:hotKey]) {
+                if (chordKey.mapping && !chordKey.nextChordKey) {
+                    trigger = chordKey;
+                    break;
+                } else if (chordKey.nextChordKey) {
+                    [nextChordKeys addObject:chordKey.nextChordKey];
+                }
+            }
+        }
+
+        if (trigger) {
+            [self dispatchNotificationForChordKey:trigger];
+            [self cancelTracking];
+        } else if ([nextChordKeys count]) {
+            self.nextChordKeys = nextChordKeys;
+            [self startTimer];
+        }
+    } else {
+        ChordKey *trigger = nil;
+
+        for (ChordKey *chordKey in hotKey.chordKeys) {
+            if (!(chordKey.validAppIds & self.currentAppId)) { continue; }
+
+            if (chordKey.isStandalone) {
+                trigger = chordKey;
+                break;
+            } else if (chordKey.isPrefix && chordKey.nextChordKey) {
+                [self.nextChordKeys addObject:chordKey.nextChordKey];
+            }
+        }
+
+        if (trigger) {
+              [self dispatchNotificationForChordKey:trigger];
+        } else if ([self.nextChordKeys count]) {
+            [self startTrackingPrefix];
+        } else {
+            ret = NO;
+        }
+
+    }
+
+    return ret;
+}
+
+- (void)startTrackingPrefix {
+    self.isTrackingPrefix = YES;
+    [self startTimer];
+}
+
+- (void)cancelTracking {
+    self.isTrackingPrefix = NO;
+    [self.nextChordKeys removeAllObjects];
+
+    [self cancelTimer];
+}
+
+- (void)startTimer {
+    [self cancelTimer];
+
+    self.trackingTimer = [NSTimer scheduledTimerWithTimeInterval:8.0f
+                                                          target:self
+                                                        selector:@selector(cancelTracking)
+                                                        userInfo:nil
+                                                         repeats:NO];
+}
+
+- (void)cancelTimer {
+    if (self.trackingTimer) {
+        [self.trackingTimer invalidate];
+        self.trackingTimer = nil;
+    }
+}
+
+
 
 @end
