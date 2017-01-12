@@ -78,7 +78,12 @@
     for (NSString *mappingComponent in mappingComponents) {
         NSString *trimmedComponent = [mappingComponent stringByTrimmingCharactersInSet:
                                       [NSCharacterSet whitespaceCharacterSet]];
-        
+
+        if (![trimmedComponent length]) {
+            [mappedKeys removeAllObjects];
+            break;
+        }
+
         HotKey *hotKey = [[HotKey alloc] initWithKey:trimmedComponent
                                              mapping:nil];
         [mappedKeys addObject:hotKey];

@@ -46,7 +46,10 @@ NSString * const AppServiceDidChangeHotKeys = @"AppServiceDidChangeHotKeys";
     NSMutableDictionary *hotKeysForAppName = [NSMutableDictionary dictionary];
     
     for (NSDictionary *keyMapping in keyMappings) {
-        NSString *key = keyMapping[@"key"];
+        NSString *key = [keyMapping[@"key"] stringByTrimmingCharactersInSet:
+                         [NSCharacterSet whitespaceCharacterSet]];
+        if (![key length]) { continue; }
+
         NSDictionary *mapping = keyMapping[@"mapping"];
         
         HotKey *hotKey = [[HotKey alloc] initWithKey:key
