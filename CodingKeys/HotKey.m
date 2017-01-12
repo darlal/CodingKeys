@@ -5,20 +5,22 @@
 @interface HotKey ()
 
 @property (nonatomic, copy, readwrite) NSString *key;
-@property (nonatomic, strong, readwrite) NSDictionary *mapping;
 @property (nonatomic, readwrite) int keyCode;
 @property (nonatomic, readwrite) int modifiers;
 @property (nonatomic, readwrite) int carbonModifiers;
+
+@property (nonatomic, strong, readwrite) NSMutableOrderedSet *chordKeys;
 
 @end
 
 @implementation HotKey
 
-- (id)initWithKey:(NSString *)key mapping:(NSDictionary *)mapping {
+- (id)initWithKey:(NSString *)key {
     self = [super init];
     if (self) {
         _key = key;
-        _mapping = mapping;
+        _chordKeys = [[NSMutableOrderedSet alloc] init];
+
         [self setup];
     }
     return self;
@@ -67,7 +69,7 @@
     }
     
     self.modifiers = modifiers;
-        self.carbonModifiers = carbonModifiers;
+    self.carbonModifiers = carbonModifiers;
 }
 
 - (NSArray *)mappedHotKeysForAppWithName:(NSString *)appName {
@@ -93,8 +95,8 @@
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"key: %@, keyCode: %d, modifiers: %d, mapping: %@",
-            self.key, self.keyCode, self.modifiers, self.mapping];
+    return [NSString stringWithFormat:@"key: %@, keyCode: %d, modifiers: %d",
+            self.key, self.keyCode, self.modifiers];
 }
 
 - (NSUInteger)hash {
