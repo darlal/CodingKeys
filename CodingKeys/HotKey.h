@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-@interface HotKey : NSObject
+@interface HotKey : NSObject <NSCopying>
 
 @property (nonatomic, copy, readonly) NSString *key;
 @property (nonatomic, readonly) int keyCode;
@@ -12,5 +12,7 @@
 @property (nonatomic, strong, readonly) NSMutableOrderedSet *chordKeys;
 
 - (id)initWithKey:(NSString *)key;
+
++ (NSArray *)mappedHotKeysForAppWithName:(NSString *)appName mapping:(NSString *)mapping;
 
 @end

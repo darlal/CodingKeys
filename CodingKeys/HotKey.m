@@ -1,6 +1,9 @@
 #import "HotKey.h"
 #import "KeyCodeConverter.h"
 #import <Carbon/Carbon.h>
+#import "ChordKey.h"
+
+
 
 @interface HotKey ()
 
@@ -72,8 +75,10 @@
     self.carbonModifiers = carbonModifiers;
 }
 
-- (NSArray *)mappedHotKeysForAppWithName:(NSString *)appName {
-    NSString *mapping = self.mapping[appName];
++ (NSArray *)mappedHotKeysForAppWithName:(NSString *)appName mapping:(NSString *)mapping {
+    mapping = [mapping stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if (![mapping length]) { return nil; }
+
     NSArray *mappingComponents = [mapping componentsSeparatedByString:@"|"];
     NSMutableArray *mappedKeys = [NSMutableArray array];
     
@@ -86,8 +91,7 @@
             break;
         }
 
-        HotKey *hotKey = [[HotKey alloc] initWithKey:trimmedComponent
-                                             mapping:nil];
+        HotKey *hotKey = [[HotKey alloc] initWithKey:trimmedComponent];
         [mappedKeys addObject:hotKey];
     }
     
@@ -114,6 +118,55 @@
         equal &= (hotKey.modifiers == self.modifiers);
     }
     return equal;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    NSMutableDictionary *cloneList = [[NSMutableDictionary alloc] init];
+    HotKey *copy = [self copyHotKey:self
+                     usingCloneList:cloneList
+                            andZone:zone];
+    return copy;
+}
+
+- (HotKey *)copyHotKey:(HotKey *)hotkey usingCloneList:(NSMutableDictionary *)cloneList andZone:(NSZone *)zone {
+    HotKey *copy = [cloneList objectForKey:@(hotkey.hash)];
+    if (!copy) {
+        copy = [[[self class] alloc] initWithKey:[hotkey.key copyWithZone:zone]];
+
+        if (copy) {
+            [cloneList setObject:copy forKey:@(copy.hash)];
+
+            for (ChordKey *chordKey in hotkey.chordKeys) {
+                ChordKey *nextChordKeyCopy = nil;
+
+                if (chordKey.nextChordKey) {
+                    HotKey *nextHotKeyCopy = [self copyHotKey:chordKey.nextChordKey.hotKey
+                                               usingCloneList:cloneList
+                                                      andZone:zone];
+
+                    for (ChordKey *next in nextHotKeyCopy.chordKeys) {
+                        if ([chordKey.nextChordKey.hotKey isEqual:next.hotKey]) {
+                            nextChordKeyCopy = next;
+                            break;
+                        }
+                    }
+                } else {
+                }
+
+                ChordKey *chordKeyCopy = [[ChordKey alloc] initWithValidAppIds:chordKey.validAppIds
+                                                                        hotKey:copy
+                                                                      isPrefix:chordKey.isPrefix
+                                                                  nextChordKey:nextChordKeyCopy
+                                                                       mapping:[chordKey.mapping copyWithZone:zone]
+                                                                  isStandalone:chordKey.isStandalone];
+
+                [copy.chordKeys addObject:chordKeyCopy];
+            }
+        }
+    }
+
+    return copy;
 }
 
 @end
