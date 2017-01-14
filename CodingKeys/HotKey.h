@@ -6,7 +6,7 @@
 @property (nonatomic, readonly) int keyCode;
 @property (nonatomic, readonly) int modifiers;
 @property (nonatomic, readonly) int carbonModifiers;
-@property (nonatomic) int keyID;
+@property (nonatomic, readonly) UInt32 keyID;
 @property (nonatomic, strong) NSValue *value;
 
 @property (nonatomic, strong, readonly) NSMutableOrderedSet *chordKeys;

@@ -72,8 +72,6 @@ static id this;
 }
 
 - (HotKey *)registerHotKey:(HotKey *)hotKey {
-    hotKey.keyID = (int)[self.hotKeys count] + 1;
-    
     EventHotKeyID hotKeyID;
     hotKeyID.signature = 'cdk1';
     hotKeyID.id = hotKey.keyID;
@@ -150,7 +148,7 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
 }
 
 - (void)unregisterAllHotKeys {
-    // AppIDs start with 2, so we can be sure that no app will have an ID of 1q
+    // AppIDs start with 2, so we can be sure that no app will have an ID of 1
     self.currentAppId = 1;
 
     [self cancelTracking];

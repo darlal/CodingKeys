@@ -3,11 +3,10 @@
 #import <Carbon/Carbon.h>
 #import "ChordKey.h"
 
-
+static UInt32 LastKeyID = 0;
 
 @interface HotKey ()
 
-@property (nonatomic, copy, readwrite) NSString *key;
 @property (nonatomic, readwrite) int keyCode;
 @property (nonatomic, readwrite) int modifiers;
 @property (nonatomic, readwrite) int carbonModifiers;
@@ -21,6 +20,7 @@
 - (id)initWithKey:(NSString *)key {
     self = [super init];
     if (self) {
+        _keyID = ++LastKeyID;
         _key = key;
         _chordKeys = [[NSMutableOrderedSet alloc] init];
 
