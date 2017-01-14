@@ -43,6 +43,9 @@ static NSInteger LastAppId = 1;
 - (void)setup {
     [self setupHotKeysForAppName];
     [self watchKeyFile];
+    
+    //TODO: REmove me
+    NSLog(@"Done - setup");
 }
 
 - (void)setupHotKeysForAppName {
@@ -80,7 +83,8 @@ static NSInteger LastAppId = 1;
         NSInteger numKeys = chordStringKeysCount - 1;
 
         for (NSInteger i = numKeys; i >= 0; i--) {
-            NSString *stringKey = [chordStringkeys[i] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            NSString *stringKey = [chordStringkeys[i] stringByTrimmingCharactersInSet:
+                                   [NSCharacterSet whitespaceCharacterSet]];
             if (![stringKey length]) {
                 [hotKeyList removeAllObjects];
                 break;
@@ -93,9 +97,10 @@ static NSInteger LastAppId = 1;
                 [allHotKeys setObject:hotKey forKey:@(hotKey.hash)];
             }
 
+            BOOL isPrefix = (i == 0) && chordStringKeysCount > 1;
             ChordKey *chordKey = [[ChordKey alloc] initWithValidAppIds:validAppIds
                                                                 hotKey:hotKey
-                                                              isPrefix:(i == 0) && chordStringKeysCount > 1
+                                                              isPrefix:isPrefix
                                                           nextChordKey:nextChordKey
                                                                mapping:i == numKeys ? mapping : nil
                                                           isStandalone:isStandalone];
