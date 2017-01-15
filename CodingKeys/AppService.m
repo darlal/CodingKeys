@@ -3,6 +3,7 @@
 #import "ChordKey.h"
 
 static NSString * const KeysFileName = @"keys";
+static NSString * const SettingsFileName = @"settings";
 static NSString * const AboutURL = @"https://github.com/fe9lix/CodingKeys";
 
 NSString * const AppServiceDidChangeHotKeys = @"AppServiceDidChangeHotKeys";
@@ -48,6 +49,7 @@ static NSInteger LastAppId = 1;
 }
 
 - (void)setup {
+    [self readSettings];
     [self setupHotKeysForAppName];
     [self watchKeyFile];
     
@@ -56,7 +58,7 @@ static NSInteger LastAppId = 1;
 }
 
 - (void)setupHotKeysForAppName {
-    NSArray *keyMappings = [self loadKeyMappingsFile];
+    NSArray *keyMappings = [self loadJSONFile:KeysFileName];
 
     NSMutableDictionary *hotKeysForAppId = [NSMutableDictionary dictionary];
     NSMutableDictionary *idForAppName = [[NSMutableDictionary alloc] init];
@@ -111,9 +113,15 @@ static NSInteger LastAppId = 1;
                                                           nextChordKey:nextChordKey
                                                                mapping:i == numKeys ? mapping : nil
                                                           isStandalone:isStandalone];
+            if (self.enableDynamicRegistration) {
+                if (isStandalone || isPrefix) {
+                    [hotKeyList addObject:hotKey];
+                }
+            } else {
+                [hotKeyList addObject:hotKey];
+            }
 
             [hotKey.chordKeys addObject:chordKey];
-            [hotKeyList addObject:hotKey];
             nextChordKey = chordKey;
         }
 
@@ -137,20 +145,33 @@ static NSInteger LastAppId = 1;
     self.idForAppName = idForAppName;
 }
 
-- (NSArray *)loadKeyMappingsFile {
+- (void)readSettings {
+    NSArray *list = [self loadJSONFile:SettingsFileName];
+    NSDictionary *settings = [list firstObject];
+    if (!settings) { return; }
+
+    id val = [settings objectForKey:@"enableDynamicRegistration"];
+    if (val != nil) { self.enableDynamicRegistration = [val boolValue]; }
+
+    val = [settings objectForKey:@"enableChordTimer"];
+    if (val != nil) { self.enableChordTimer = [val boolValue]; }
+
+    val = [settings objectForKey:@"chordTimeout"];
+    if (val != nil) { self.chordTimeout = [val doubleValue]; }
+}
+
+- (NSArray *)loadJSONFile:(NSString *)file {
     NSError *error;
-    NSString *jsonString = [NSString stringWithContentsOfFile:[self keysFilePath]
+    NSString *jsonString = [NSString stringWithContentsOfFile:[self pathForFile:file]
                                                      encoding:NSUTF8StringEncoding
                                                         error:&error];
-    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    
-    return [NSJSONSerialization JSONObjectWithData:jsonData
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];    return [NSJSONSerialization JSONObjectWithData:jsonData
                                            options:0
                                              error:nil];
 }
 
-- (NSString *)keysFilePath {
-    return [[NSBundle mainBundle] pathForResource:KeysFileName
+- (NSString *)pathForFile:(NSString *)file {
+    return [[NSBundle mainBundle] pathForResource:file
                                            ofType:@"json"];
 }
 
@@ -203,7 +224,7 @@ static NSInteger LastAppId = 1;
 }
 
 - (void)openKeyMappings {
-    [[NSWorkspace sharedWorkspace] openFile:[self keysFilePath]];
+    [[NSWorkspace sharedWorkspace] openFile:[self pathForFile:KeysFileName]];
 }
 
 - (void)openAboutURL {
