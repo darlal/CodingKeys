@@ -49,7 +49,6 @@ static NSInteger LastAppId = 1;
 }
 
 - (void)setup {
-    [self readSettings];
     [self setupHotKeysForAppName];
     [self watchKeyFile];
     
@@ -58,6 +57,8 @@ static NSInteger LastAppId = 1;
 }
 
 - (void)setupHotKeysForAppName {
+    [self readSettings];
+    
     NSArray *keyMappings = [self loadJSONFile:KeysFileName];
 
     NSMutableDictionary *hotKeysForAppId = [NSMutableDictionary dictionary];
