@@ -57,8 +57,8 @@
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(didChangeHotKeys:)
-                                                 name:AppServiceDidChangeHotKeys
+                                             selector:@selector(didChangeConfig:)
+                                                 name:AppServiceDidChangeConfig
                                                object:nil];
 }
 
@@ -115,7 +115,7 @@
     [[HotKeyService sharedService] dispatchKeyEventsForHotKeys:mappedHotKeys];
 }
 
-- (void)didChangeHotKeys:(NSNotification *)notification {
+- (void)didChangeConfig:(NSNotification *)notification {
     [self registerHotKeys];
 }
 

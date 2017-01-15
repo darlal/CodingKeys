@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-NSString * const AppServiceDidChangeHotKeys;
+NSString * const AppServiceDidChangeConfig;
 
 @interface AppService : NSObject
 

@@ -6,7 +6,7 @@ static NSString * const KeysFileName = @"keys";
 static NSString * const SettingsFileName = @"settings";
 static NSString * const AboutURL = @"https://github.com/fe9lix/CodingKeys";
 
-NSString * const AppServiceDidChangeHotKeys = @"AppServiceDidChangeHotKeys";
+NSString * const AppServiceDidChangeConfig = @"AppServiceDidChangeConfig";
 
 static NSInteger LastAppId = 1;
 
@@ -193,19 +193,19 @@ static NSInteger LastAppId = 1;
     dispatch_async(dispatch_get_main_queue(), ^{
         self.timer = [NSTimer scheduledTimerWithTimeInterval:0.5f
                                                       target:self
-                                                    selector:@selector(keysDidChange:)
+                                                    selector:@selector(configDidChange:)
                                                     userInfo:nil
                                                      repeats:NO];
     });
 }
 
-- (void)keysDidChange:(id)obj {
+- (void)configDidChange:(id)obj {
     [self setupHotKeysForAppName];
-    [self dispatchKeysDidChangeNotification];
+    [self dispatchConfigDidChangeNotification];
 }
 
-- (void)dispatchKeysDidChangeNotification {
-    NSNotification *notification = [NSNotification notificationWithName:AppServiceDidChangeHotKeys
+- (void)dispatchConfigDidChangeNotification {
+    NSNotification *notification = [NSNotification notificationWithName:AppServiceDidChangeConfig
                                                                  object:nil
                                                                userInfo:nil];
     
