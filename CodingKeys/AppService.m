@@ -228,6 +228,10 @@ static NSInteger LastAppId = 1;
     [[NSWorkspace sharedWorkspace] openFile:[self pathForFile:KeysFileName]];
 }
 
+- (void)openSettings {
+    [[NSWorkspace sharedWorkspace] openFile:[self pathForFile:SettingsFileName]];
+}
+
 - (void)openAboutURL {
     [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:AboutURL]];
 }

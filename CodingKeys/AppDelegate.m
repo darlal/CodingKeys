@@ -130,6 +130,10 @@
     [[AppService sharedService] openKeyMappings];
 }
 
+- (IBAction)settingsClicked:(id)sender {
+    [[AppService sharedService] openSettings];
+}
+
 - (IBAction)helpClicked:(id)sender {
     [[AppService sharedService] openAboutURL];
 }

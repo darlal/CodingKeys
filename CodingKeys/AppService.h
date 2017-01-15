@@ -14,6 +14,7 @@ NSString * const AppServiceDidChangeConfig;
 - (NSNumber *)idForAppWithName:(NSString *)appName;
 - (NSOrderedSet *)hotKeysForAppWithName:(NSString *)appName;
 - (void)openKeyMappings;
+- (void)openSettings;
 - (void)openAboutURL;
 
 @end
