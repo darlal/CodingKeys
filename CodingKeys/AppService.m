@@ -70,61 +70,15 @@ static NSInteger LastAppId = 1;
         if (![chordString length]) { continue; }
 
         NSDictionary *mapping = keyMapping[@"mapping"];
-        NSInteger validAppIds = 0;
+        NSInteger validAppIds = [self validAppIdsForMapping:mapping
+                                                 appNameIds:idForAppName];
 
-        for (NSString *appName in mapping) {
-            NSNumber *appId = [idForAppName objectForKey:appName];
-            if (!appId) {
-                appId = @(LastAppId *= 2);
-                [idForAppName setObject:appId forKey:appName];
-            }
-
-            validAppIds |= [appId integerValue];
-        }
-
-        NSArray *chordStringkeys = [chordString componentsSeparatedByString:@"|"];
-        if (![chordStringkeys count]) { continue; }
-
-        NSMutableOrderedSet *hotKeyList = [[NSMutableOrderedSet alloc] init];
-
-        ChordKey *nextChordKey = nil;
-        NSInteger chordStringKeysCount = [chordStringkeys count];
-        BOOL isStandalone = chordStringKeysCount == 1;
-        NSInteger numKeys = chordStringKeysCount - 1;
-
-        for (NSInteger i = numKeys; i >= 0; i--) {
-            NSString *stringKey = [chordStringkeys[i] stringByTrimmingCharactersInSet:
-                                   [NSCharacterSet whitespaceCharacterSet]];
-            if (![stringKey length]) {
-                [hotKeyList removeAllObjects];
-                break;
-            }
-
-            HotKey *temp = [[HotKey alloc] initWithKey:stringKey];
-            HotKey *hotKey = [allHotKeys objectForKey:@(temp.hash)];
-            if (!hotKey) {
-                hotKey = temp;
-                [allHotKeys setObject:hotKey forKey:@(hotKey.hash)];
-            }
-
-            BOOL isPrefix = (i == 0) && chordStringKeysCount > 1;
-            ChordKey *chordKey = [[ChordKey alloc] initWithValidAppIds:validAppIds
-                                                                hotKey:hotKey
-                                                              isPrefix:isPrefix
-                                                          nextChordKey:nextChordKey
-                                                               mapping:i == numKeys ? mapping : nil
-                                                          isStandalone:isStandalone];
-            if (self.enableDynamicRegistration) {
-                if (isStandalone || isPrefix) {
-                    [hotKeyList addObject:hotKey];
-                }
-            } else {
-                [hotKeyList addObject:hotKey];
-            }
-
-            [hotKey.chordKeys addObject:chordKey];
-            nextChordKey = chordKey;
-        }
+        NSOrderedSet *hotKeyList;
+        hotKeyList = [self generateKeysForChordString:chordString
+                                              mapping:mapping
+                                          validAppIds:validAppIds
+                                           allHotKeys:allHotKeys
+                            enableDynamicRegistration:self.enableDynamicRegistration];
 
         if (![hotKeyList count]) { continue; }
 
@@ -146,7 +100,78 @@ static NSInteger LastAppId = 1;
     self.idForAppName = idForAppName;
 }
 
+- (NSInteger)validAppIdsForMapping:(NSDictionary *)mapping
+                        appNameIds:(NSMutableDictionary *)idForAppName {
+    NSInteger validAppIds = 0;
+
+    for (NSString *appName in mapping) {
+        NSNumber *appId = [idForAppName objectForKey:appName];
+        if (!appId) {
+            appId = @(LastAppId *= 2);
+            [idForAppName setObject:appId forKey:appName];
+        }
+
+        validAppIds |= [appId integerValue];
+    }
+
+    return validAppIds;
+}
+
+- (NSOrderedSet *)generateKeysForChordString:(NSString *)chordString
+                                     mapping:(NSDictionary *)mapping
+                                 validAppIds:(NSInteger)validAppIds
+                                  allHotKeys:(NSMutableDictionary *)allHotKeys
+                   enableDynamicRegistration:(BOOL)dynReg
+{
+    NSArray *chordStringkeys = [chordString componentsSeparatedByString:@"|"];
+    if (![chordStringkeys count]) { return nil; }
+
+    NSMutableOrderedSet *hotKeyList = [[NSMutableOrderedSet alloc] init];
+
+    ChordKey *nextChordKey = nil;
+    NSInteger chordStringKeysCount = [chordStringkeys count];
+    BOOL isStandalone = chordStringKeysCount == 1;
+    NSInteger numKeys = chordStringKeysCount - 1;
+
+    for (NSInteger i = numKeys; i >= 0; i--) {
+        NSString *stringKey = [chordStringkeys[i] stringByTrimmingCharactersInSet:
+                               [NSCharacterSet whitespaceCharacterSet]];
+        if (![stringKey length]) {
+            [hotKeyList removeAllObjects];
+            break;
+        }
+
+        HotKey *temp = [[HotKey alloc] initWithKey:stringKey];
+        HotKey *hotKey = [allHotKeys objectForKey:@(temp.hash)];
+        if (!hotKey) {
+            hotKey = temp;
+            [allHotKeys setObject:hotKey forKey:@(hotKey.hash)];
+        }
+
+        BOOL isPrefix = (i == 0) && chordStringKeysCount > 1;
+        ChordKey *chordKey = [[ChordKey alloc] initWithValidAppIds:validAppIds
+                                                            hotKey:hotKey
+                                                          isPrefix:isPrefix
+                                                      nextChordKey:nextChordKey
+                                                           mapping:i == numKeys ? mapping : nil
+                                                      isStandalone:isStandalone];
+        if (dynReg) {
+            if (isStandalone || isPrefix) { [hotKeyList addObject:hotKey]; }
+        } else {
+            [hotKeyList addObject:hotKey];
+        }
+
+        [hotKey.chordKeys addObject:chordKey];
+        nextChordKey = chordKey;
+    }
+
+    return hotKeyList;
+}
+
 - (void)readSettings {
+    //REMOVE ME
+    NSLog(@"SETTINGS-FILE: %@", [self pathForFile:SettingsFileName]);
+
     NSArray *list = [self loadJSONFile:SettingsFileName];
     NSDictionary *settings = [list firstObject];
     if (!settings) { return; }
