@@ -14,6 +14,7 @@ NSString * const HotKeyHandlerDidTriggerChordKey = @"HotKeyHandlerDidTriggerChor
 @property (nonatomic, assign) BOOL isTrackingPrefix;
 @property (nonatomic, strong) NSMutableOrderedSet *nextChordKeys;
 @property (nonatomic, assign) NSInteger currentAppId;
+@property (nonatomic, strong) NSOrderedSet *prefixes;
 
 @property (nonatomic, assign) BOOL enableDynamicRegistration;
 @property (nonatomic, assign) BOOL enableChordTimer;
@@ -47,7 +48,6 @@ static id this;
     this = self;
     
     self.hotKeys = [NSMutableDictionary dictionary];
-    self.nextChordKeys = [[NSMutableOrderedSet alloc] init];
 
     // AppIDs start with 2, so we can be sure that no app will have an ID of 1
     self.currentAppId = 1;
@@ -75,9 +75,9 @@ static id this;
                                    NULL);
 }
 
-
 - (void)registerHotKeys:(NSOrderedSet *)hotKeys forAppId:(NSInteger)appId {
     self.currentAppId = appId;
+    if (self.enableDynamicRegistration) { self.prefixes = hotKeys; }
 
     for (HotKey *hotKey in hotKeys) {
         [self registerHotKey:hotKey];
@@ -130,7 +130,7 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     HotKey *hotKey = [this findHotKeyByID:keyID];
     
     OSStatus ret = noErr;
-    BOOL handled = [this handleChordTrackingForHotKey:hotKey];
+    BOOL handled = [this handleCapturedHotKey:hotKey];
     if (!handled) {
         ret = CallNextEventHandler(nextHandler, theEvent);
         if (ret == eventNotHandledErr) {
@@ -164,11 +164,19 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     // AppIDs start with 2, so we can be sure that no app will have an ID of 1
     self.currentAppId = 1;
 
-    [self cancelTracking];
+    self.prefixes = nil;
+    [self cancelTrackingAndResetPrefixes:NO];
 
     NSDictionary *hotKeys = [self.hotKeys copy];
+    [self unregisterHotKeys:hotKeys exclude:nil];
+}
+
+- (void)unregisterHotKeys:(NSDictionary *)hotKeys exclude:(NSOrderedSet *)excludeList {
     for (id keyID in hotKeys) {
-        [self unregisterHotKey:hotKeys[keyID]];
+        HotKey *hotKey = hotKeys[keyID];
+
+        if (excludeList && [excludeList containsObject:hotKey]) { continue; }
+        [self unregisterHotKey:hotKey];
     }
 }
 
@@ -176,6 +184,7 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     EventHotKeyRef hotKeyRef = (EventHotKeyRef)[hotKey.value pointerValue];
     UnregisterEventHotKey(hotKeyRef);
     hotKey.value = nil;
+
     [self.hotKeys removeObjectForKey:@(hotKey.keyID)];
 }
 
@@ -198,80 +207,146 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     CFRelease(source);
 }
 
-- (BOOL)handleChordTrackingForHotKey:(HotKey *)hotKey {
+- (BOOL)handleCapturedHotKey:(HotKey *)hotKey {
     BOOL ret = YES;
 
     if (self.isTrackingPrefix) {
-        [self cancelTimer];
-
-        NSMutableOrderedSet *nextChordKeys = [[NSMutableOrderedSet alloc] init];
-        ChordKey *trigger = nil;
-
-        for (ChordKey *chordKey in self.nextChordKeys) {
-            if ([chordKey.hotKey isEqual:hotKey]) {
-                if (chordKey.mapping && !chordKey.nextChordKey) {
-                    trigger = chordKey;
-                    break;
-                } else if (chordKey.nextChordKey) {
-                    [nextChordKeys addObject:chordKey.nextChordKey];
-                }
-            }
-        }
-
-        if (trigger) {
-            [self dispatchNotificationForChordKey:trigger];
-            [self cancelTracking];
-        } else if ([nextChordKeys count]) {
-            self.nextChordKeys = nextChordKeys;
-            [self startTimer];
-        }
+        ret = [self handleChordTrackingForHotKey:hotKey
+                       enableDynamicRegistration:self.enableDynamicRegistration];
     } else {
-        ChordKey *trigger = nil;
+        ret = [self handlePrefixTrackingForHotKey:hotKey
+                        enableDynamicRegistration:self.enableDynamicRegistration];
+    }
+    
+    return ret;
+}
 
-        for (ChordKey *chordKey in hotKey.chordKeys) {
-            if (!(chordKey.validAppIds & self.currentAppId)) { continue; }
+- (BOOL)handlePrefixTrackingForHotKey:(HotKey *)hotKey
+            enableDynamicRegistration:(BOOL)dynamicReg {
+    BOOL ret = YES;
+    ChordKey *trigger = nil;
+    NSMutableOrderedSet *nextHotKeys = nil;
+    NSDictionary *prevHotKeys = nil;
+    NSMutableOrderedSet *nextChordKeys = [[NSMutableOrderedSet alloc] init];
 
-            if (chordKey.isStandalone) {
-                trigger = chordKey;
-                break;
-            } else if (chordKey.isPrefix && chordKey.nextChordKey) {
-                [self.nextChordKeys addObject:chordKey.nextChordKey];
+    if (dynamicReg) {
+        nextHotKeys = [[NSMutableOrderedSet alloc] init];
+        prevHotKeys = [self.hotKeys copy];
+    }
+
+    for (ChordKey *chordKey in hotKey.chordKeys) {
+        if (!(chordKey.validAppIds & self.currentAppId)) { continue; }
+
+        if (chordKey.isStandalone) {
+            trigger = chordKey;
+            break;
+        } else if (chordKey.isPrefix && chordKey.nextChordKey) {
+            if (dynamicReg) {
+                HotKey *nextKey = chordKey.nextChordKey.hotKey;
+                if (!nextKey.value) { [self registerHotKey:nextKey]; }
+
+                [nextHotKeys addObject:nextKey];
             }
+
+            [nextChordKeys addObject:chordKey.nextChordKey];
+        }
+    }
+
+    if (trigger) {
+        [self dispatchNotificationForChordKey:trigger];
+    } else if ([nextChordKeys count]) {
+
+        if (dynamicReg) {
+            [self unregisterHotKeys:prevHotKeys exclude:nextHotKeys];
         }
 
-        if (trigger) {
-              [self dispatchNotificationForChordKey:trigger];
-        } else if ([self.nextChordKeys count]) {
-            [self startTrackingPrefix];
-        } else {
-            ret = NO;
-        }
-
+        self.nextChordKeys = nextChordKeys;
+        self.isTrackingPrefix = YES;
+        [self startTimer];
+    } else {
+        ret = NO;
     }
 
     return ret;
 }
 
-- (void)startTrackingPrefix {
-    self.isTrackingPrefix = YES;
-    [self startTimer];
-}
+- (BOOL)handleChordTrackingForHotKey:(HotKey *)hotKey
+           enableDynamicRegistration:(BOOL)dynamicReg {
+    ChordKey *trigger = nil;
+    NSMutableOrderedSet *nextHotKeys = nil;
+    NSDictionary *prevHotKeys = nil;
+    NSMutableOrderedSet *nextChordKeys = [[NSMutableOrderedSet alloc] init];
 
-- (void)cancelTracking {
-    self.isTrackingPrefix = NO;
-    [self.nextChordKeys removeAllObjects];
+    if (dynamicReg) {
+        nextHotKeys = [[NSMutableOrderedSet alloc] init];
+        prevHotKeys = [self.hotKeys copy];
+    }
+
 
     [self cancelTimer];
+
+    for (ChordKey *chordKey in self.nextChordKeys) {
+        if ([chordKey.hotKey isEqual:hotKey]) {
+            if (chordKey.mapping && !chordKey.nextChordKey) {
+                trigger = chordKey;
+                break;
+            } else if (chordKey.nextChordKey) {
+                if (dynamicReg) {
+                    HotKey *nextKey = chordKey.nextChordKey.hotKey;
+                    if (!nextKey.value) { [self registerHotKey:nextKey]; }
+
+                    [nextHotKeys addObject:nextKey];
+                }
+
+                [nextChordKeys addObject:chordKey.nextChordKey];
+            }
+        }
+    }
+
+    if (trigger) {
+        [self dispatchNotificationForChordKey:trigger];
+        [self cancelTrackingAndResetPrefixes:dynamicReg];
+    } else if ([nextChordKeys count]) {
+
+        if (dynamicReg) {
+            [self unregisterHotKeys:prevHotKeys exclude:nextHotKeys];
+        }
+
+        self.nextChordKeys = nextChordKeys;
+        [self startTimer];
+    }
+
+    return YES;
+}
+
+- (void)cancelTrackingAndResetPrefixes:(BOOL)reset {
+
+    self.isTrackingPrefix = NO;
+    self.nextChordKeys = nil;
+    [self cancelTimer];
+
+    if (self.enableDynamicRegistration && reset) {
+        NSDictionary *prevHotKeys = [self.hotKeys copy];
+
+        for (HotKey *hotKey in self.prefixes) {
+            if (hotKey.value) { continue; }
+            [self registerHotKey:hotKey];
+        }
+
+        [self unregisterHotKeys:prevHotKeys exclude:self.prefixes];
+    }
 }
 
 - (void)startTimer {
     [self cancelTimer];
 
-    self.trackingTimer = [NSTimer scheduledTimerWithTimeInterval:8.0f
-                                                          target:self
-                                                        selector:@selector(cancelTracking)
-                                                        userInfo:nil
-                                                         repeats:NO];
+    if (self.enableChordTimer) {
+        self.trackingTimer = [NSTimer scheduledTimerWithTimeInterval:self.chordTimeout
+                                                              target:self
+                                                            selector:@selector(timerDidRunOut)
+                                                            userInfo:nil
+                                                             repeats:NO];
+    }
 }
 
 - (void)cancelTimer {
@@ -279,6 +354,10 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
         [self.trackingTimer invalidate];
         self.trackingTimer = nil;
     }
+}
+
+- (void)timerDidRunOut {
+    [self cancelTrackingAndResetPrefixes:self.enableDynamicRegistration];
 }
 
 
