@@ -33,8 +33,8 @@ def make_table
 
   @keys.each do |key_mapping|
     row = [
-      "**`#{key_mapping["key"]}`**"]
       "**#{key_mapping["command"].gsub("|", "&#124;")}**",
+      "<nobr>**`#{key_mapping["key"].gsub("|", "`**&nbsp;**`")}`**</nobr>"]
 
     mapping = key_mapping["mapping"]
 
