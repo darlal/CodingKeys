@@ -1,0 +1,7 @@
+[
+ {
+ "enableDynamicRegistration": true,
+ "enableChordTimer": false,
+ "chordTimeout": 8.0
+ }
+]
