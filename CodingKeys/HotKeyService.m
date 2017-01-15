@@ -15,6 +15,11 @@ NSString * const HotKeyHandlerDidTriggerChordKey = @"HotKeyHandlerDidTriggerChor
 @property (nonatomic, strong) NSMutableOrderedSet *nextChordKeys;
 @property (nonatomic, assign) NSInteger currentAppId;
 
+@property (nonatomic, assign) BOOL enableDynamicRegistration;
+@property (nonatomic, assign) BOOL enableChordTimer;
+@property (nonatomic, assign) NSTimeInterval chordTimeout;
+
+
 @end
 
 @implementation HotKeyService
@@ -48,6 +53,14 @@ static id this;
     self.currentAppId = 1;
     
     [self installHotKeyHandler];
+}
+
+- (void)configureWithEnableDynamicRegistration:(BOOL)dynamicReg
+                              enableChordTimer:(BOOL)enableChordTimer
+                                  chordTimeout:(NSTimeInterval)chordTimeout {
+    self.enableDynamicRegistration = dynamicReg;
+    self.enableChordTimer = enableChordTimer;
+    self.chordTimeout = chordTimeout;
 }
 
 - (void)installHotKeyHandler {

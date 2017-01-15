@@ -77,12 +77,16 @@
 }
 
 - (void)registerHotKeysForApp:(NSString *)app {
-    AppService *appService = [AppService sharedService];
-    HotKeyService *hotKeyService = [HotKeyService sharedService];
+    AppService *asvc = [AppService sharedService];
+    HotKeyService *hsvc = [HotKeyService sharedService];
 
-    NSOrderedSet *hotKeys = [appService hotKeysForAppWithName:app];
-    [hotKeyService registerHotKeys:hotKeys
-                          forAppId:[[appService idForAppWithName:app] integerValue]];
+    [hsvc configureWithEnableDynamicRegistration:asvc.enableDynamicRegistration
+                                enableChordTimer:asvc.enableChordTimer
+                                    chordTimeout:asvc.chordTimeout];
+
+    NSOrderedSet *hotKeys = [asvc hotKeysForAppWithName:app];
+    [hsvc registerHotKeys:hotKeys
+                 forAppId:[[asvc idForAppWithName:app] integerValue]];
 }
 
 - (void)unregisterHotKeys {

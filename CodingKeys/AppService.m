@@ -18,6 +18,9 @@ static NSInteger LastAppId = 1;
 @property (nonatomic, strong) NSTimer *timer;
 
 @property (nonatomic, strong) NSDictionary *idForAppName;
+@property (nonatomic, assign, readwrite) BOOL enableDynamicRegistration;
+@property (nonatomic, assign, readwrite) BOOL enableChordTimer;
+@property (nonatomic, assign, readwrite) NSTimeInterval chordTimeout;
 
 @end
 
@@ -35,6 +38,10 @@ static NSInteger LastAppId = 1;
 - (id)init {
     self = [super init];
     if (self) {
+        _enableDynamicRegistration = YES;
+        _enableChordTimer = NO;
+        _chordTimeout = 8.0;
+        
         [self setup];
     }
     return self;

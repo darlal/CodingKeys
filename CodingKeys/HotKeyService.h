@@ -9,6 +9,9 @@ extern NSString * const HotKeyHandlerDidTriggerChordKey;
 
 + (instancetype)sharedService;
 
+- (void)configureWithEnableDynamicRegistration:(BOOL)dynamicReg
+                              enableChordTimer:(BOOL)enableChordTimer
+                                  chordTimeout:(NSTimeInterval)chordTimeout;
 - (void)registerHotKeys:(NSOrderedSet *)hotKeys forAppId:(NSInteger)appId;
 - (HotKey *)registerHotKey:(HotKey *)hotKey;
 - (void)unregisterAllHotKeys;
