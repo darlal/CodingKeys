@@ -39,8 +39,12 @@ def make_table
     mapping = key_mapping["mapping"]
 
     apps.each do |app|
-      mapped_key = mapping[app].gsub("|", "&#124;")
-      row << "#{mapped_key}" || " "
+      if mapping.key?(app)
+        mapped_key = mapping[app].gsub("|", "&#124;")
+        row << "#{mapped_key}" || " "
+      else
+        row << " "
+      end
     end
 
     markdown_str += make_row(row)
