@@ -5,6 +5,7 @@
 static NSString * const KeysFileName = @"keys";
 static NSString * const SettingsFileName = @"settings";
 static NSString * const AboutURL = @"https://github.com/fe9lix/CodingKeys";
+static NSString * const DefaultEscapeKey = @"⎋";
 
 NSString * const AppServiceDidChangeConfig = @"AppServiceDidChangeConfig";
 
@@ -22,6 +23,7 @@ static NSInteger LastAppId = 1;
 @property (nonatomic, assign, readwrite) BOOL enableDynamicRegistration;
 @property (nonatomic, assign, readwrite) BOOL enableChordTimer;
 @property (nonatomic, assign, readwrite) NSTimeInterval chordTimeout;
+@property (nonatomic, strong, readwrite) HotKey *chordEscapeHotKey;
 
 @end
 
@@ -184,6 +186,12 @@ static NSInteger LastAppId = 1;
 
     val = [settings objectForKey:@"chordTimeout"];
     if (val != nil) { self.chordTimeout = [val doubleValue]; }
+
+    val = [settings objectForKey:@"chordEscapeKey"];
+    NSString *escapeKey = [val stringByTrimmingCharactersInSet:
+                           [NSCharacterSet whitespaceCharacterSet]];
+    if (![escapeKey length]) { escapeKey = DefaultEscapeKey; }
+    self.chordEscapeHotKey = [[HotKey alloc] initWithKey:escapeKey];
 }
 
 - (NSArray *)loadJSONFile:(NSString *)file {

@@ -2,6 +2,7 @@
  {
  "enableDynamicRegistration": true,
  "enableChordTimer": false,
- "chordTimeout": 8.0
+ "chordTimeout": 8.0,
+ "chordEscapeKey": "⎋"
  }
 ]
