@@ -3,6 +3,7 @@
  "enableDynamicRegistration": true,
  "enableChordTimer": false,
  "chordTimeout": 8.0,
- "chordEscapeKey": "⎋"
+ "chordEscapeKey": "⎋",
+ "chordEscapeKeyCount": 4
  }
 ]

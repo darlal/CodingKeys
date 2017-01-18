@@ -83,7 +83,8 @@
     [hsvc configureWithEnableDynamicRegistration:asvc.enableDynamicRegistration
                                 enableChordTimer:asvc.enableChordTimer
                                     chordTimeout:asvc.chordTimeout
-                               chordEscapeHotKey:asvc.chordEscapeHotKey];
+                               chordEscapeHotKey:asvc.chordEscapeHotKey
+                             chordEscapeKeyCount:asvc.chordEscapeKeyCount];
 
     //Remveo me
     NSLog(@"APP-NAME:%@ SETTINGS - EnableDynReg:%@ EnableTimer:%@ ", app, @(asvc.enableDynamicRegistration), @(asvc.enableChordTimer));

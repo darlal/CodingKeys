@@ -24,6 +24,7 @@ static NSInteger LastAppId = 1;
 @property (nonatomic, assign, readwrite) BOOL enableChordTimer;
 @property (nonatomic, assign, readwrite) NSTimeInterval chordTimeout;
 @property (nonatomic, strong, readwrite) HotKey *chordEscapeHotKey;
+@property (nonatomic, assign, readwrite) NSInteger chordEscapeKeyCount;
 
 @end
 
@@ -44,6 +45,7 @@ static NSInteger LastAppId = 1;
         _enableDynamicRegistration = YES;
         _enableChordTimer = NO;
         _chordTimeout = 8.0;
+        _chordEscapeKeyCount = 4;
         
         [self setup];
     }
@@ -187,6 +189,9 @@ static NSInteger LastAppId = 1;
     val = [settings objectForKey:@"chordTimeout"];
     if (val != nil) { self.chordTimeout = [val doubleValue]; }
 
+    val = [settings objectForKey:@"chordEscapeKeyCount"];
+    if (val != nil) { self.chordEscapeKeyCount = [val integerValue]; }
+
     val = [settings objectForKey:@"chordEscapeKey"];
     NSString *escapeKey = [val stringByTrimmingCharactersInSet:
                            [NSCharacterSet whitespaceCharacterSet]];
@@ -199,7 +204,8 @@ static NSInteger LastAppId = 1;
     NSString *jsonString = [NSString stringWithContentsOfFile:[self pathForFile:file]
                                                      encoding:NSUTF8StringEncoding
                                                         error:&error];
-    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];    return [NSJSONSerialization JSONObjectWithData:jsonData
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    return [NSJSONSerialization JSONObjectWithData:jsonData
                                            options:0
                                              error:nil];
 }

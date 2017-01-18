@@ -12,7 +12,8 @@ extern NSString * const HotKeyHandlerDidTriggerChordKey;
 - (void)configureWithEnableDynamicRegistration:(BOOL)dynamicReg
                               enableChordTimer:(BOOL)enableChordTimer
                                   chordTimeout:(NSTimeInterval)chordTimeout
-                             chordEscapeHotKey:(HotKey *)escapeHotKey;
+                             chordEscapeHotKey:(HotKey *)escapeHotKey
+                           chordEscapeKeyCount:(NSInteger)escapeCount;
 - (void)registerHotKeys:(NSOrderedSet *)hotKeys forAppId:(NSInteger)appId;
 - (HotKey *)registerHotKey:(HotKey *)hotKey;
 - (void)unregisterAllHotKeys;

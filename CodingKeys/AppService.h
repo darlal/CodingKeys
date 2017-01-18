@@ -10,6 +10,7 @@ NSString * const AppServiceDidChangeConfig;
 @property (nonatomic, assign, readonly) BOOL enableChordTimer;
 @property (nonatomic, assign, readonly) NSTimeInterval chordTimeout;
 @property (nonatomic, strong, readonly) HotKey *chordEscapeHotKey;
+@property (nonatomic, assign, readonly) NSInteger chordEscapeKeyCount;
 
 + (instancetype)sharedService;
 
