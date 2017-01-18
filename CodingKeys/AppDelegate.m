@@ -82,7 +82,11 @@
 
     [hsvc configureWithEnableDynamicRegistration:asvc.enableDynamicRegistration
                                 enableChordTimer:asvc.enableChordTimer
-                                    chordTimeout:asvc.chordTimeout];
+                                    chordTimeout:asvc.chordTimeout
+                               chordEscapeHotKey:asvc.chordEscapeHotKey];
+
+    //Remveo me
+    NSLog(@"APP-NAME:%@ SETTINGS - EnableDynReg:%@ EnableTimer:%@ ", app, @(asvc.enableDynamicRegistration), @(asvc.enableChordTimer));
 
     NSOrderedSet *hotKeys = [asvc hotKeysForAppWithName:app];
     [hsvc registerHotKeys:hotKeys

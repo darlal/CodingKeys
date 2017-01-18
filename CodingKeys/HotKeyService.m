@@ -15,10 +15,12 @@ NSString * const HotKeyHandlerDidTriggerChordKey = @"HotKeyHandlerDidTriggerChor
 @property (nonatomic, strong) NSMutableOrderedSet *nextChordKeys;
 @property (nonatomic, assign) NSInteger currentAppId;
 @property (nonatomic, strong) NSOrderedSet *prefixes;
+@property (nonatomic, assign) NSInteger chordEscapeCount;
 
 @property (nonatomic, assign) BOOL enableDynamicRegistration;
 @property (nonatomic, assign) BOOL enableChordTimer;
 @property (nonatomic, assign) NSTimeInterval chordTimeout;
+@property (nonatomic, strong, readwrite) HotKey *chordEscapeHotKey;
 
 
 @end
@@ -57,10 +59,12 @@ static id this;
 
 - (void)configureWithEnableDynamicRegistration:(BOOL)dynamicReg
                               enableChordTimer:(BOOL)enableChordTimer
-                                  chordTimeout:(NSTimeInterval)chordTimeout {
+                                  chordTimeout:(NSTimeInterval)chordTimeout
+                                chordEscapeHotKey:(HotKey *)escapeHotKey {
     self.enableDynamicRegistration = dynamicReg;
     self.enableChordTimer = enableChordTimer;
     self.chordTimeout = chordTimeout;
+    self.chordEscapeHotKey = escapeHotKey;
 }
 
 - (void)installHotKeyHandler {
@@ -262,6 +266,8 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
 
         self.nextChordKeys = nextChordKeys;
         self.isTrackingPrefix = YES;
+        self.chordEscapeCount = 0;
+        [self registerHotKey:self.chordEscapeHotKey];
         [self startTimer];
     } else {
         ret = NO;
@@ -307,13 +313,24 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
         [self dispatchNotificationForChordKey:trigger];
         [self cancelTrackingAndResetPrefixes:dynamicReg];
     } else if ([nextChordKeys count]) {
-
         if (dynamicReg) {
+            [nextHotKeys addObject:self.chordEscapeHotKey];
             [self unregisterHotKeys:prevHotKeys exclude:nextHotKeys];
         }
 
         self.nextChordKeys = nextChordKeys;
         [self startTimer];
+        self.chordEscapeCount = 0;
+    } else if ([hotKey isEqual:self.chordEscapeHotKey]) {
+        ++self.chordEscapeCount;
+
+        //REMOVE Me
+        NSLog(@"ESCAPE key count: %ld", (long)self.chordEscapeCount);
+
+        if (self.chordEscapeCount == 4) {
+            [self cancelTrackingAndResetPrefixes:dynamicReg];
+            self.chordEscapeCount = 0;
+        }
     }
 
     return YES;
@@ -324,6 +341,7 @@ static OSStatus hotKeyHandler(EventHandlerCallRef nextHandler,
     self.isTrackingPrefix = NO;
     self.nextChordKeys = nil;
     [self cancelTimer];
+    [self unregisterHotKey:self.chordEscapeHotKey];
 
     if (self.enableDynamicRegistration && reset) {
         NSDictionary *prevHotKeys = [self.hotKeys copy];
