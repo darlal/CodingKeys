@@ -70,6 +70,9 @@ static NSInteger LastAppId = 1;
     NSMutableDictionary *allHotKeys = [[NSMutableDictionary alloc] init];
 
     for (NSDictionary *keyMapping in keyMappings) {
+        BOOL disabled = [[keyMapping objectForKey:@"disabled"] boolValue];
+        if (disabled) { continue; }
+
         NSString *chordString = [keyMapping[@"key"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         if (![chordString length]) { continue; }
 
@@ -90,13 +93,15 @@ static NSInteger LastAppId = 1;
             NSNumber *appId = [idForAppName objectForKey:appName];
 
             if (![hotKeysForAppId objectForKey:appId]) {
-                [hotKeysForAppId setObject:[[NSMutableOrderedSet alloc] init] forKey:appId];
+                [hotKeysForAppId setObject:[[NSMutableOrderedSet alloc] init]
+                                    forKey:appId];
             }
 
             NSString *mappedKey = mapping[appName];
-            if (![mappedKey isEqualToString:chordString]) {
-                [[hotKeysForAppId objectForKey:appId] unionOrderedSet:hotKeyList];
-            }
+            if (([hotKeyList count] == 1) &&
+                ([mappedKey isEqualToString:chordString])) { continue; }
+
+            [[hotKeysForAppId objectForKey:appId] unionOrderedSet:hotKeyList];
         }
     }
 
